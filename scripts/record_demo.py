@@ -55,6 +55,10 @@ def parse_output(raw):
 
 # Translate presentation text only. Numeric measurements and grid cells stay intact.
 EN_REPLACEMENTS = [
+    ("  奖励模型已保存到 ", "  Reward model saved to "),
+    ("奖励模型（预测器）最终版已保存到 ", "Final reward model saved to "),
+    ("[阶段1] 已从 ", "[Stage 1] Loaded reward model from "),
+    (" 载入奖励模型，跳过预训练", "; skipping pretraining"),
     ("mini_rl_teacher —— RL-Teacher 核心机制本机复现", "mini_rl_teacher -- RL-Teacher core mechanics in NumPy"),
     ("目标：让小球停在目标点 ", "Goal: keep the ball near target "),
     (" 附近（agent 看不到这个目标，只靠人类偏好）", " (hidden from agent; preferences only)"),

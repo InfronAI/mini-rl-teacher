@@ -1,7 +1,7 @@
 {
   "language": "en",
-  "original_terminal_sha256": "b83693ec1b2b174d190b1f38dca45ae3ed7e5b9b30101707f9854ac41f293ae8",
-  "renderer_sha256": "cbdc3b18beca9750a22bbe8e7f018b35d66f058e29229bd35192c7909e923058",
+  "original_terminal_sha256": "130f1892c0bea7146aac4b9bec10dc50d2cbc4c5dbd54af136be44f34b930997",
+  "renderer_sha256": "e66811a921c4f49f44a6bb16414351162906b97d1701f84d5269fbd313462bf3",
   "python": "3.11.16",
   "pillow": "12.3.0",
   "training_frames": 101,
@@ -9,8 +9,8 @@
   "timing": "Pretraining 4s, each printed training frame 0.32s, evaluation 7s; not real-time",
   "presentation": "English translation of original stdout",
   "assets": {
-    "mini-rl-teacher.en.mp4": "bdd0719ed46edde1fed7583ff1a559287b3b03791fefcb435ed1cab83161935f",
-    "preview.en.gif": "117f3aecca0d3e8814f5a7c8345299a47d459520a7a689d78fa56954e4487726",
-    "poster.en.png": "28ff77dabb1019f58deabd5ac2a4d3ae48b298e5e05367076e6da5def50b612a"
+    "mini-rl-teacher.en.mp4": "2491978eb96ac8ee91b6357ab5ce920930411b3b0db433d7f7f938ed6b28434d",
+    "preview.en.gif": "081333ea8806f6cd5e599c178ee0113ae63d548d26792e24adc51a6e643a700e",
+    "poster.en.png": "44b97022b2e5d1de6189490dc78e7861aa1b9eff567f1c708b31577f38b4518e"
   }
 }

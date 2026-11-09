@@ -20,9 +20,12 @@ mini_rl_teacher.py —— RL-Teacher 核心机制的「本机迷你复现」
   - 为了简化实现, 这里用「合成人类」来代替「人类」: 片段真实累积奖励更高者胜出（对应原项目 -p synth 模式）。
 
 运行: python3 mini_rl_teacher.py
+      python3 mini_rl_teacher.py --load   # 已有 reward_model.npz 时直接载入、跳过预测器预训练
 （训练过程中会在终端里持续刷新 2D 点阵图，实时观察小球向目标收敛的过程）
+（奖励模型会在预训练后和训练结束时落盘到 reward_model.npz）
 """
 
+import os
 import sys
 import numpy as np
 from collections import deque
@@ -31,7 +34,7 @@ from collections import deque
 CLIP_LENGTH = 1.5          # 每个视频片段时长（秒），对应 teach.py 里的 CLIP_LENGTH
 FPS = 10                   # 渲染帧率
 SEG_LEN = int(CLIP_LENGTH * FPS)   # 每个片段包含的步数 = 15
-EPISODE_LEN = 30           # 每个 episode 的步数
+EPISODE_LEN = 60           # 每个 episode 的步数（2D 下需要更长时间才来得及「加速—刹车—停住」）
 WORLD_LIM = 6.0            # 点阵平面范围：x, y 均在 [-6, 6]
 TARGET = np.array([3.0, 2.0], dtype=np.float32)   # 「人类心里真正想要的」目标点（agent 看不到）
 OBS_SCALE = np.array([0.2, 0.2, 0.33, 0.33], dtype=np.float32)  # 输入归一化尺度 (x, y, vx, vy)
@@ -44,6 +47,8 @@ C_RESET = "\033[0m"
 C_TGT = "\033[31m"         # 红：目标
 C_BALL = "\033[32m"        # 绿：小球
 C_DIM = "\033[90m"         # 灰：背景点阵
+
+MODEL_PATH = "reward_model.npz"   # 奖励模型（预测器）落盘路径
 
 
 # ==================================================================== 1. 玩具环境
@@ -203,6 +208,21 @@ class MLP:
         self.lr = lr
         self.cache = None
 
+    _KEYS = ("W1", "b1", "W2", "b2", "W3", "b3")
+
+    def state_dict(self):
+        """导出权重（落盘用）。"""
+        return {k: getattr(self, k) for k in self._KEYS}
+
+    def load_state_dict(self, sd):
+        """从权重字典恢复，并把 Adam 状态重置为初始值。"""
+        for k in self._KEYS:
+            setattr(self, k, np.asarray(sd[k], dtype=np.float64))
+        self.params = [getattr(self, k) for k in self._KEYS]
+        self.m = [np.zeros_like(p) for p in self.params]
+        self.v = [np.zeros_like(p) for p in self.params]
+        self.t = 0
+
     def forward(self, X):
         z1 = X @ self.W1 + self.b1; a1 = _leaky(z1)
         z2 = a1 @ self.W2 + self.b2; a2 = _leaky(z2)
@@ -249,6 +269,14 @@ class ComparisonRewardPredictor:
         self._train_iters = 0
         self._train_loss = 0.0
         self.rng = np.random.RandomState(seed + 1)
+
+    # -------- 持久化：把学到的奖励模型存到磁盘 / 从磁盘读回
+    def save(self, path=MODEL_PATH):
+        np.savez(path, **self.mlp.state_dict())
+
+    def load(self, path=MODEL_PATH):
+        with np.load(path) as sd:
+            self.mlp.load_state_dict(sd)
 
     # -------- 服务 agent：给一条轨迹输出逐步预测奖励（对应 teach.py predict_reward）
     def predict_reward(self, path):
@@ -320,11 +348,12 @@ class Policy:
     """高斯策略：均值 = tanh(W·obs + b)，标准差固定。用 REINFORCE 更新。"""
 
     def __init__(self, obs_dim, act_dim, lr=0.1, seed=0):
-        rng = np.random.RandomState(seed)
-        self.W = rng.randn(obs_dim, act_dim) * 0.01
+        # 零初始化：策略从「动作恒为 0」出发。线性策略若随机初始化，很容易
+        # 率先学到「一路朝某个方向推」的局部最优（小球直冲边界），零初始化更稳。
+        self.W = np.zeros((obs_dim, act_dim))
         self.b = np.zeros(act_dim)
         self.log_std = np.full(act_dim, -0.7)
-        self.explore_scale = 1.0   # 探索噪声的外部退火系数（训练后期 → 接近 0）
+        self.explore_scale = 1.0   # 探索噪声的外部退火系数
         self.lr = lr
         self.m = [np.zeros_like(p) for p in (self.W, self.b, self.log_std)]
         self.v = [np.zeros_like(p) for p in (self.W, self.b, self.log_std)]
@@ -360,27 +389,28 @@ class Policy:
             p -= self.lr * mhat / (np.sqrt(vhat) + eps)
 
     def update(self, episodes):
-        """episodes: 每项含 obs / actions / adv，adv 为「预测奖励」的优势估计。"""
+        """episodes: 每项含 obs / actions / adv，adv 为「预测奖励」的优势估计。
+
+        只更新策略均值参数 W, b；log_std 被冻结（不更新）。
+        若同时学习 log_std，后期 σ 会被推得极小 → 梯度爆炸、策略发散。
+        """
         gW = np.zeros_like(self.W)
         gb = np.zeros_like(self.b)
-        glogstd = np.zeros_like(self.log_std)
         total = 0
         for ep in episodes:
             obs = ep["obs"] * OBS_SCALE
             a = ep["actions"]
             adv = ep["adv"][:, None]
-            pre = obs @ self.W + self.b
-            mean = np.tanh(pre)
-            sigma = self._sigma()
+            mean = np.tanh(obs @ self.W + self.b)
+            sigma = np.maximum(self._sigma(), 1e-3)
             dlogp_dmu = (a - mean) / sigma ** 2
-            dlogp_dlogstd = ((a - mean) ** 2) / sigma ** 2 - 1
 
             dpre = (adv * dlogp_dmu) * (1 - mean ** 2)
             gW += obs.T @ dpre
             gb += dpre.sum(axis=0)
-            glogstd += (adv * dlogp_dlogstd).sum(axis=0)
             total += len(ep["obs"])
-        self._adam([-gW / total, -gb / total, -glogstd / total])
+        # log_std 的梯度传 0（冻结），只有 W、b 被 Adam 更新
+        self._adam([-gW / total, -gb / total, np.zeros_like(self.log_std)])
 
 
 # ==================================================================== 主流程
@@ -441,22 +471,29 @@ def main():
 
     env = ToyLineEnv(seed=0)
 
-    # ---------------- 阶段 1：预训练（对应 teach.py main 里的 pretrain 段）
-    print("\n[阶段1] 随机 rollout 生成片段 -> 合成人类打标 -> 训练奖励预测器")
-    pretrain_segments = segments_from_rand_rollout(env, n_desired_segments=200, seed=0)
     collector = SyntheticComparisonCollector()
-    for i in range(100):   # 组成 100 个比较对
-        collector.add_segment_pair(pretrain_segments[i], pretrain_segments[i + 100])
-    collector.label_unlabeled_comparisons()
-    print("  已生成 %d 个比较对（合成人类标签：真实累积奖励更高者胜）" % len(collector))
-
     schedule = LabelSchedule(final_timesteps=70 * 10 * EPISODE_LEN,
                              final_labels=1500, pretrain_labels=100)
     predictor = ComparisonRewardPredictor(env.obs_dim, env.act_dim, collector, schedule, seed=0)
 
-    for i in range(600):
-        predictor.train_predictor()
-    print("  预测器预训练完成，最后 loss = %.4f" % predictor._train_loss)
+    # ---------------- 阶段 1：预训练（对应 teach.py main 里的 pretrain 段）
+    # 加 --load 且磁盘上已有奖励模型时，直接读回来、跳过预训练。
+    if "--load" in sys.argv and os.path.exists(MODEL_PATH):
+        predictor.load(MODEL_PATH)
+        print("\n[阶段1] 已从 %s 载入奖励模型，跳过预训练" % MODEL_PATH)
+    else:
+        print("\n[阶段1] 随机 rollout 生成片段 -> 合成人类打标 -> 训练奖励预测器")
+        pretrain_segments = segments_from_rand_rollout(env, n_desired_segments=200, seed=0)
+        for i in range(100):   # 组成 100 个比较对
+            collector.add_segment_pair(pretrain_segments[i], pretrain_segments[i + 100])
+        collector.label_unlabeled_comparisons()
+        print("  已生成 %d 个比较对（合成人类标签：真实累积奖励更高者胜）" % len(collector))
+
+        for i in range(600):
+            predictor.train_predictor()
+        print("  预测器预训练完成，最后 loss = %.4f" % predictor._train_loss)
+        predictor.save(MODEL_PATH)
+        print("  奖励模型已保存到 %s" % MODEL_PATH)
 
     # 验证预测器质量：预测总分 与 真实总分 的相关系数
     def predictor_correlation():
@@ -489,10 +526,11 @@ def main():
         drawn_once = True
 
     for it in range(1, N_ITERS + 1):
-        # 探索噪声线性退火：越到后期噪声越小，策略才能收敛并稳定停在目标附近
-        policy.set_explore_scale(max(0.05, 1.0 - 0.95 * it / N_ITERS))
+        # 探索噪声从 1.0 线性退火到 0.6 并保持。2D 下需要保留一定探索，
+        # 否则策略容易早早锁死在「冲边界」的局部最优里出不来。
+        policy.set_explore_scale(max(0.6, 1.0 - 0.4 * it / N_ITERS))
         episodes = []
-        for _ in range(16):   # 每轮采集 16 条 episode
+        for _ in range(32):   # 每轮采集 32 条 episode（更多样本 → 梯度方差更小）
             path = do_rollout(env, lambda ob: policy.act(ob)[0])
 
             # ======= 这就是全项目的接合点（对应 agents/.../rollouts.py）=======
@@ -500,7 +538,7 @@ def main():
             predictor.path_callback(path)                   # 顺便产出训练预测器的数据
             # ================================================================
 
-            returns = reward_to_go(pred_rewards)
+            returns = reward_to_go(pred_rewards, gamma=0.95)
             episodes.append({"obs": path["obs"], "actions": path["actions"],
                              "rewards": pred_rewards, "returns": returns,
                              "end_pos": path["human_obs"][-1],
@@ -538,6 +576,10 @@ def main():
           % (end_pos[:, 0].mean(), end_pos[:, 1].mean(), dist.mean()))
     print("  真奖励   平均=%.2f（越接近 0 越好）" % end_r.mean())
     print("  终点落在目标 ±0.5 内的比例 = %.0f%%" % (100 * (dist <= 0.5).mean()))
+
+    # 联合训练阶段预测器也在持续更新，这里把最终版奖励模型覆盖保存
+    predictor.save(MODEL_PATH)
+    print("\n奖励模型（预测器）最终版已保存到 %s" % MODEL_PATH)
 
     print("\n完成。可见：agent 只优化「预测奖励」，但真实目标已基本达成 ——")
     print("这正是 RL-Teacher 的核心：把人类的相对偏好，转化成可优化的奖励信号。")

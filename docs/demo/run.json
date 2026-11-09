@@ -1,22 +1,48 @@
 {
   "source": "mini_rl_teacher.py",
-  "source_sha256": "86d04a035e16551ce5ff9525e940210b3c3e91fefff69aff13504467ae656ab6",
-  "terminal_sha256": "b83693ec1b2b174d190b1f38dca45ae3ed7e5b9b30101707f9854ac41f293ae8",
-  "training_command": "python3.11 -u mini_rl_teacher.py",
+  "source_sha256": "8b2dc628dfa7b3d7b97dbcfe21bf1a778c4e8a87694835a64e96a01e53eeeeed",
   "python": "3.11.16",
-  "pillow": "12.3.0",
   "numpy": "2.4.6",
-  "training_frames": 101,
-  "video_seconds": 43.32,
-  "timing": "Condensed stdout replay: pretraining 4s, each printed training frame 0.32s, evaluation 7s",
+  "command": "python3.11 -u mini_rl_teacher.py",
+  "exit_code": 0,
+  "elapsed_seconds": 62.873,
+  "terminal_sha256": "130f1892c0bea7146aac4b9bec10dc50d2cbc4c5dbd54af136be44f34b930997",
+  "configuration": {
+    "episode_steps": 60,
+    "episodes_per_iteration": 32,
+    "iterations": 1000,
+    "joint_environment_steps": 1920000,
+    "gamma": 0.95,
+    "policy_initialization": "W and b zero",
+    "log_std": -0.7,
+    "log_std_trainable": false,
+    "exploration_scale_first": 0.9996,
+    "exploration_scale_last": 0.6,
+    "evaluation_episodes": 50,
+    "success_radius": 0.5,
+    "mode": "fresh training, no --load"
+  },
+  "evaluation": {
+    "mean_endpoint": [
+      2.76,
+      1.81
+    ],
+    "mean_endpoint_distance": 0.31,
+    "mean_true_return": -35.6,
+    "success_rate_percent": 100,
+    "successful_episodes": 50,
+    "precision": "Metrics transcribed from the script output; distances and returns are rounded to two decimal places."
+  },
   "evaluation_stdout": [
     "[最终评估·确定性策略] 50 条 episode：",
-    "  终点位置 平均=(6.00, 4.78)，距目标平均=4.10（越小越贴近目标）",
-    "  真奖励   平均=-91.79（越接近 0 越好）",
-    "  终点落在目标 ±0.5 内的比例 = 0%",
+    "  终点位置 平均=(2.76, 1.81)，距目标平均=0.31（越小越贴近目标）",
+    "  真奖励   平均=-35.60（越接近 0 越好）",
+    "  终点落在目标 ±0.5 内的比例 = 100%",
+    "",
+    "奖励模型（预测器）最终版已保存到 reward_model.npz",
     "",
     "完成。可见：agent 只优化「预测奖励」，但真实目标已基本达成 ——",
     "这正是 RL-Teacher 的核心：把人类的相对偏好，转化成可优化的奖励信号。"
   ],
-  "note": "Metrics are from the captured default run, not a convergence guarantee. Replay mode assumes the supplied log matches this source and environment."
+  "training_frames": 101
 }

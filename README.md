@@ -8,19 +8,32 @@ Start with [mini_rl_teacher.py](mini_rl_teacher.py). This standalone Python file
 
 The mini version uses a 2D ball environment, synthetic preferences, and REINFORCE. Its neural network, backpropagation, and Adam optimizer are implemented in NumPy. The repository also retains the original RL-Teacher code for MuJoCo, TRPO/PPO, and human feedback collection for comparison. The original project implements Christiano et al.'s 2017 paper, [Deep Reinforcement Learning from Human Preferences](https://arxiv.org/abs/1706.03741). The mini version explains the core mechanism; it does not reproduce the paper's experimental results.
 
+## Current result
+
+**The current default implementation reaches the target in all 50 final evaluation episodes: success rate 100%, mean endpoint distance 0.31.** The acceptance criterion is an endpoint within radius `0.5` of `[3, 2]` after 60 steps. This result establishes endpoint success; the evaluation does not test zero velocity or continued residence at the target.
+
+The recorded execution used Python `3.11.16`, NumPy `2.4.6`, the default seeds, and the complete 1,000-iteration fresh-training loop without `--load`. Source SHA-256: `8b2dc628dfa7b3d7b97dbcfe21bf1a778c4e8a87694835a64e96a01e53eeeeed`.
+
+| Final evaluation metric | Measured result |
+| --- | --- |
+| Evaluation episodes | `50` |
+| Successful episodes | `50 / 50` |
+| Success rate | `100%` |
+| Mean endpoint | `(2.76, 1.81)` |
+| Mean endpoint distance | `0.31` |
+| Mean true cumulative reward | `-35.60` |
+
+[Full current-run output](docs/demo/terminal.txt) · [Configuration, source hash, and results](docs/demo/run.json). Values use the precision printed by the script. The policy uses zero initialization, frozen `log_std`, 60-step episodes, 32 episodes per iteration, and return discount `0.95`.
+
 ## Demo
 
-[![Terminal replay of the default training run](docs/demo/preview.en.gif)](https://github.com/InfronAI/mini-rl-teacher/raw/refs/heads/main/docs/demo/mini-rl-teacher.en.mp4)
+[![English replay of the current default training run](docs/demo/preview.en.gif)](https://github.com/InfronAI/mini-rl-teacher/raw/refs/heads/main/docs/demo/mini-rl-teacher.en.mp4)
 
-[Watch / download the MP4](https://github.com/InfronAI/mini-rl-teacher/raw/refs/heads/main/docs/demo/mini-rl-teacher.en.mp4) · [English transcript](docs/demo/terminal.en.txt) · [Original output](docs/demo/terminal.txt) · [Run metadata](docs/demo/run.json)
+[English MP4](https://github.com/InfronAI/mini-rl-teacher/raw/refs/heads/main/docs/demo/mini-rl-teacher.en.mp4) · [中文版视频](https://github.com/InfronAI/mini-rl-teacher/raw/refs/heads/main/docs/demo/mini-rl-teacher.zh-CN.mp4) · [English transcript](docs/demo/terminal.en.txt)
 
-The English video translates the on-screen text of the original Chinese output; all measurements and grid positions are preserved. [中文版视频](https://github.com/InfronAI/mini-rl-teacher/raw/refs/heads/main/docs/demo/mini-rl-teacher.zh-CN.mp4) replays the same run with Chinese text.
+Both videos replay the current-code run reported above: reward pretraining, all 101 printed training frames, final evaluation, and reward-model saving. English translates the original Chinese output. Both languages preserve the same numbers, grid positions, and playback timing.
 
-The video comes from an actual run of the unchanged `mini_rl_teacher.py` with its default settings. It includes pretraining, all 101 printed training frames, and final evaluation. Terminal output is reformatted into a roughly 43-second replay, with each training frame held for 0.32 seconds. Playback duration does not represent training time.
-
-Using Python 3.11 and NumPy 2.4.6, this run completed 1,000 training iterations. Deterministic evaluation over 50 episodes reported a mean endpoint of `(6.00, 4.78)`, mean endpoint distance of `4.10`, mean true return of `-91.79`, and a success rate of `0%`. **This default run did not converge.** The video preserves the actual result and illustrates why the script's fixed completion message is not a success check. Other environments and random sequences may produce different outcomes.
-
-See [docs/demo/README.md](docs/demo/README.md) for recording and reproduction instructions.
+The replay lasts 43.32 seconds: pretraining is held for 4 seconds, each training frame for 0.32 seconds, and evaluation for 7 seconds. This is presentation timing, not training time. See [docs/demo/README.md](docs/demo/README.md) for reproduction instructions.
 
 ## Quick start
 
@@ -37,7 +50,21 @@ In Windows PowerShell, activate the environment with `.venv\Scripts\Activate.ps1
 
 The mini version requires only Python 3 and NumPy. It does not require the root `setup.py`, MuJoCo, TensorFlow, a GPU, a database, or cloud storage. Running `pip install -e .` in the root installs dependencies for the historical implementation instead.
 
-Execution proceeds through reward-model pretraining, joint policy/reward-model training, and final evaluation. The terminal displays the target and the ball's mean endpoint. Use a terminal that supports ANSI cursor control and Unicode. The script currently has no command-line options: training settings are defined in the file, and models or training results are not saved automatically.
+Execution proceeds through reward-model pretraining, joint policy/reward-model training, and final evaluation. The terminal displays the target and the ball's mean endpoint. Use a terminal that supports ANSI cursor control and Unicode. The script supports `--load` for reward-model loading. Training settings remain defined in the file. A fresh run saves reward-network weights to `reward_model.npz` after pretraining, then overwrites that file with the final reward network after training and evaluation.
+
+### Save and load the reward model
+
+```bash
+# Fresh training: pretrain the reward model, then train a new policy
+python mini_rl_teacher.py
+
+# Load existing reward weights and train a new policy
+python mini_rl_teacher.py --load
+```
+
+`MODEL_PATH = "reward_model.npz"` is relative to the process's working directory. The default command always performs pretraining, even when this file already exists. `--load` skips initial random-segment collection, the 100 initial comparisons, and the 600 pretraining updates only when the file exists. If the file is absent, `--load` follows the fresh-training path.
+
+The `.npz` stores exactly six arrays: `W1`, `b1`, `W2`, `b2`, `W3`, and `b3`. Loading restores those reward-network weights and resets Adam's first/second moments and step counter to zero. It does not restore policy weights, comparison data, label-schedule progress, or random state. The policy starts from zero weights and runs all 1,000 iterations in both modes. This is reward-model reuse, not training resumption. Both modes overwrite `reward_model.npz` with the final reward network.
 
 ## Task: learn to approach a target from preferences
 
@@ -49,7 +76,7 @@ Despite its name, `ToyLineEnv` is a two-dimensional environment:
 | Action | `[fx, fy]`: force along each axis, clipped to `[-1, 1]` |
 | Initial state | Random position in `[-1, 1]²`, zero velocity |
 | World boundaries | Both coordinates stay within `[-6, 6]` |
-| Episode length | Fixed at 30 steps |
+| Episode length | Fixed at 60 steps |
 | Target | Fixed position `[3, 2]` |
 | True reward | Negative Euclidean distance to the target after taking the action |
 
@@ -67,13 +94,15 @@ The example defines a true reward to simulate human judgment: the segment with t
 
 ## Training loop
 
+The following describes fresh training. `--load` with an existing reward file starts with the loaded reward network and skips steps 1 and 2.
+
 ```mermaid
 flowchart TD
     A[Collect trajectories with uniform random actions] --> B[Sample 200 segments]
     B --> C[Create 100 synthetic preference pairs]
     C --> D[Pretrain reward model for 600 updates]
-    D --> E[Initialize Gaussian policy]
-    E --> F[Collect 16 episodes per iteration]
+    D --> E[Initialize Gaussian policy with zero mean weights]
+    E --> F[Collect 32 episodes per iteration]
     F --> G[Predict step rewards and compute returns]
     G --> H[Update policy with REINFORCE]
     H --> F
@@ -92,10 +121,10 @@ Each trajectory contains:
 
 | Field | Meaning | Default full-episode shape |
 | --- | --- | --- |
-| `obs` | Position and velocity before the action | `(30, 4)` |
-| `actions` | Actions passed to the environment | `(30, 2)` |
-| `original_rewards` | True rewards after the action | `(30,)` |
-| `human_obs` | Positions after the action, used for visualization and evaluation | `(30, 2)` |
+| `obs` | Position and velocity before the action | `(60, 4)` |
+| `actions` | Actions passed to the environment | `(60, 2)` |
+| `original_rewards` | True rewards after the action | `(60,)` |
+| `human_obs` | Positions after the action, used for visualization and evaluation | `(60, 2)` |
 
 ### 2. Train a reward model from comparisons
 
@@ -128,7 +157,7 @@ Cross-entropy against the left/right labels drives hand-written backpropagation 
 `Policy` is created only after reward pretraining. It has no hidden layers and loads no pretrained weights:
 
 ```python
-W = rng.randn(4, 2) * 0.01
+W = np.zeros((4, 2))
 b = np.zeros(2)
 log_std = np.full(2, -0.7)
 ```
@@ -141,7 +170,9 @@ sigma = exp(log_std) * explore_scale
 action = clip(mean + sigma * noise, -1, 1)
 ```
 
-`noise` is standard Gaussian noise. The initial mean is close to zero, and the standard deviation before the exploration multiplier is approximately `0.497`. All of `W`, `b`, and `log_std` are trained. Although the class docstring describes a fixed standard deviation, the implementation updates it.
+`noise` is standard Gaussian noise. The initial mean is exactly zero for every state. `act_mean()` therefore returns zero before training, while `act()` adds Gaussian exploration noise and returns nonzero sampled actions. Only `W` and `b` are trained. `log_std` stays at `-0.7`: its optimizer gradient is zero throughout training.
+
+At iteration `i`, `explore_scale = max(0.6, 1 - 0.4 * i / 1000)`. The sampling standard deviation decreases from `0.496387` at iteration 1 to `0.297951` at iteration 1,000. The gradient calculation uses `max(sigma, 0.001)`; the default schedule stays above this floor.
 
 Uniform random exploration for the initial dataset and this Gaussian policy are separate stages. The former does not supply weights to the latter.
 
@@ -151,12 +182,12 @@ The integration point in `main()` is:
 path = do_rollout(env, lambda ob: policy.act(ob)[0])
 pred_rewards = predictor.predict_reward(path)
 predictor.path_callback(path)
-returns = reward_to_go(pred_rewards)
+returns = reward_to_go(pred_rewards, gamma=0.95)
 ```
 
-Each iteration collects 16 episodes. Predicted rewards are converted to reward-to-go with a discount factor of `0.99`, then returns are standardized across the batch and passed to `Policy.update()` as `adv`. There is no learned state-value function. This is a simplified REINFORCE update, not TRPO or PPO.
+Each iteration collects 32 episodes. Predicted rewards are converted to reward-to-go with a discount factor of `0.95`, then returns are standardized across the batch and passed to `Policy.update()` as `adv`. The helper function defaults to `0.99`, but `main()` explicitly passes `0.95`. There is no learned state-value function. The policy update uses REINFORCE.
 
-`path_callback()` maintains the latest 200 candidate segments, adds comparisons according to the label schedule, and periodically trains the reward model. Historical comparisons remain in the collector. Updates alternate sequentially; episodes within one policy batch can receive rewards from different versions of the reward model.
+`path_callback()` maintains the latest 200 candidate segments, adds comparisons according to the label schedule, and periodically trains the reward model. Historical comparisons remain in the collector. Updates alternate sequentially. The reward model updates after every two 60-step episodes, so a 32-episode policy batch spans 16 reward-model updates. All 1,000 iterations perform 16,000 online reward-model updates, in addition to the 600 pretraining updates.
 
 ### 4. Evaluate the policy
 
@@ -169,53 +200,54 @@ This measures approaching the target within a fixed horizon. The reward does not
 | Display | Meaning and limitations |
 | --- | --- |
 | `▼` | Target position |
-| `●` | Mean endpoint of the current 16 training episodes, not a live position in one episode |
+| `●` | Mean endpoint of the current 32 training episodes, not a live position in one episode |
 | `★` | Mean endpoint and target map to the same character cell, not necessarily the same coordinates |
 | True reward | Mean true cumulative reward for the batch; closer to zero is better |
-| Distance / hit | Distance from the mean endpoint to the target; errors in opposite directions can cancel |
+| Distance / hit | Distance from the mean endpoint to the target; opposing endpoint errors cancel in the mean |
 | Predictor correlation | Correlation between predicted and true total rewards on 20 uniform-random-policy trajectories |
 | Comparisons | Number of comparisons created, not the number of successful episodes |
 
-The script prints a correlation value after pretraining. In the joint-training display, this value starts at `0` and is recomputed every 100 iterations when the drawing condition is also met; otherwise, it retains the previous value. It does not fully measure reward-model accuracy on states visited by the current policy.
+The script prints a correlation value after pretraining. In the joint-training display, this value starts at `0` and is recomputed every 100 iterations when the drawing condition is also met; otherwise, it retains the previous value. This metric measures random-policy trajectories, not current-policy trajectories.
 
-The final statement that the true goal has been achieved is fixed text, **not an automatically verified conclusion**. Use measured final distance and success rate, rather than assuming every run converges.
+The final statement that the true goal has been achieved is fixed text, **not an automatically verified conclusion**. The acceptance criterion implemented by the script is endpoint distance at most `0.5`. The final printed sentence does not participate in that calculation.
 
 ## Configuration and convergence
 
-There are no `--seed` or `--iters` options. Edit the corresponding constants or settings in `main()`.
+The only implemented flag is `--load`. There are no `--seed` or `--iters` options. Edit the corresponding constants or settings in `main()`.
 
 | Setting | Default | Location |
 | --- | --- | --- |
+| Reward-model file `MODEL_PATH` | `reward_model.npz` | Top-level constants; relative to working directory |
 | Target `TARGET` | `[3, 2]` | Top-level constants |
-| Episode length `EPISODE_LEN` | `30` | Top-level constants |
+| Episode length `EPISODE_LEN` | `60` | Top-level constants |
 | Segment length `SEG_LEN` | `1.5 × 10 = 15` | Top-level constants |
 | Joint iterations `N_ITERS` | `1000` | Top-level constants |
 | Drawing interval `DRAW_EVERY` | `10`, plus iteration 1 | Top-level constants |
 | Initial segments / comparisons / reward updates | `200 / 100 / 600` | `main()` |
-| Episodes per iteration | `16` | `main()` |
-| Label target / schedule horizon | `1500 / 21000` steps | `LabelSchedule` construction |
+| Episodes per iteration | `32` | `main()` |
+| Label target / schedule horizon | `1500 / 42000` steps | `LabelSchedule` construction |
 | Reward learning rate / maximum batch size | `0.001 / 64` | `MLP` / `train_predictor()` |
 | Policy learning rate | `0.1` | `Policy` construction in `main()` |
-| Exploration multiplier | Linearly decreases from near `1` to `0.05` | Joint-training loop |
+| Return discount | `0.95` | Explicit argument in `main()` |
+| Policy initialization | Zero `W` and `b` | `Policy.__init__()` |
+| Policy log standard deviation | Frozen at `-0.7` | `Policy.update()` passes a zero gradient |
+| Exploration multiplier | `0.9996` at iteration 1; `0.6` at iteration 1,000 | Joint-training loop |
 
-Default joint training takes `1000 × 16 × 30 = 480000` environment steps, excluding pretraining and evaluation rollouts. The label schedule still uses `70 × 10 × 30 = 21000` steps, so the desired label count approaches its limit relatively early. Actual comparison creation is also limited to at most one new pair per episode. Reducing `N_ITERS` accelerates exploration annealing as well as shortening training. Keep episode length at least as large as segment length; otherwise, initial sampling cannot collect valid segments.
+Default joint training takes `1000 × 32 × 60 = 1920000` environment steps, excluding pretraining and evaluation rollouts. The label schedule uses `70 × 10 × 60 = 42000` steps. At step 42,000, its desired label count is 1,486; its final limit is 1,500. Actual comparison creation is also limited to at most one new pair per episode. Reducing `N_ITERS` accelerates exploration annealing as well as shortening training. Keep episode length at least as large as segment length; otherwise, initial sampling cannot collect valid segments.
 
-Both the initial policy and the initial dataset affect convergence. The policy determines early exploration, while the dataset determines which behaviors the reward model first learns to distinguish. Subsequent sampling feeds these effects back into training. Approaching a target and slowing down near it require different evidence; initial random trajectories need not cover both.
+The policy starts from zero weights; changing the `seed` argument to `Policy` does not change its initialization because that argument is unused. Policy action noise comes from the global NumPy random state.
 
-To study initialization, hold the initial dataset and reward model fixed while varying the policy seed, then hold the policy fixed while varying the data. Compare final distances and success rates across runs, rather than relying only on the mean-endpoint visualization.
+The global NumPy, environment, and reward-model seeds are `0`. The `seed` argument to `segments_from_rand_rollout()` is also unused inside that function, which draws from the global random state. Correlation evaluation also shares the training environment and global random source, so changing the number of evaluation calls changes subsequent random sequences.
 
-The current global NumPy, environment, and reward-model seeds are `0`; the policy initialization seed is `1`. The `seed` argument to `segments_from_rand_rollout()` is unused inside that function, which draws from the global random state. Correlation evaluation also shares the training environment and global random source, so changing the number of evaluation calls changes subsequent random sequences.
+## Implementation boundaries
 
-## Current limitations
-
-These describe existing behavior and have not been fixed in the implementation:
+The current implementation has the following concrete boundaries:
 
 - **Action clipping and policy gradients are inconsistent.** Actions are sampled from a Gaussian and clipped before execution, but updates insert the clipped actions into the ordinary Gaussian log-probability gradient. This introduces bias when clipping occurs. `act()` already returns the unclipped action, but the main loop stores only the clipped one.
-- **Exploration noise need not decrease monotonically.** The external multiplier anneals, while the optimizer also learns `log_std`; both determine the actual standard deviation.
-- **Comparisons can repeat a segment.** Online pairing can select the same segment twice, while equal true scores receive a right-wins label. Such comparisons provide no useful directional signal.
-- **Reward-update frequency is approximate.** The callback updates after accumulating at least 100 steps, then resets the counter. With 30-step episodes, the actual interval is 120 steps.
-- **Generalization and training stability are limited.** The implementation uses one reward network, random pairing, and fixed input scaling. It has no separate preference-validation set, value network, trust-region constraint, or clipped policy objective.
-- **No persistence or automated acceptance checks.** Models, optimizer state, and comparisons remain in memory. There are no automated training tests for the mini version or convergence guarantees.
+- **Pairing samples with replacement.** The two random indices are drawn independently. If they match, both segments are identical and the label is right-wins; the preference gradient is zero for that pair.
+- **Reward-update frequency is approximate.** The callback updates after accumulating at least 100 steps, then resets the counter. With 60-step episodes, the actual interval is two episodes, or 120 steps.
+- **No additional training safeguards.** The implementation uses one reward network, random pairing, and fixed input scaling. It has no separate preference-validation set, value network, trust-region constraint, or clipped policy objective.
+- **Reward weights are the only saved training state.** Policy weights, optimizer state, comparison data, and random state are not saved. Loading resets reward-model Adam state and trains a new policy. The result above covers fresh training; the loaded-model mode has a different initialization and is not covered by that result. There is no automated multi-seed acceptance suite.
 
 ## Reading alongside the original project
 
@@ -268,7 +300,7 @@ python rl_teacher/teach.py -p human --pretrain_labels 175 -e Reacher-v1 -n human
 
 Human feedback is read and written directly through Django's `Comparison` model. The training process and web app must access the same database. Videos are uploaded asynchronously to the GCS location specified by `RL_TEACHER_GCS_BUCKET`, and the browser plays their media URLs. The training process does not call a labeling service over HTTP. See [human-feedback-api/README.md](human-feedback-api/README.md) for the web app entry point.
 
-The original environment wrappers may modify rewards or termination conditions. Logged `original_rewards` therefore refer to the wrapped environment's rewards. The original code and tests are retained as historical research code for comparison, not as evidence of a validated training run in the current environment.
+The original environment wrappers modify rewards and termination conditions for specific tasks. Logged `original_rewards` therefore refer to the wrapped environment's rewards. The original code and tests are retained as historical research code for comparison, not as evidence of a validated training run in the current environment.
 
 ## Attribution and license
 
