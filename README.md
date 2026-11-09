@@ -1,26 +1,28 @@
 # Mini RL Teacher
 
+**English** | [简体中文](README.zh-CN.md)
+
 A NumPy-only introduction to reinforcement learning from preferences, with a 2D control task, a learned reward model, and terminal visualization.
 
-本项目以 [mini_rl_teacher.py](mini_rl_teacher.py) 为学习入口，用一个独立 Python 文件展示完整闭环：**比较行为片段 → 学习奖励模型 → 用预测奖励优化策略 → 收集新的比较**。
+Start with [mini_rl_teacher.py](mini_rl_teacher.py). This standalone Python file demonstrates the full loop: **compare behavior segments → learn a reward model → optimize a policy using predicted rewards → collect new comparisons**.
 
-迷你版本使用二维小球环境、合成偏好和 REINFORCE，神经网络、反向传播与 Adam 均由 NumPy 实现。仓库同时保留原始 RL-Teacher 的 MuJoCo、TRPO/PPO 和人工标注网页代码，供对照阅读。原项目实现了 Christiano 等人 2017 年的 [Deep Reinforcement Learning from Human Preferences](https://arxiv.org/abs/1706.03741)；迷你版本用于理解核心机制，不是论文实验结果的复现。
+The mini version uses a 2D ball environment, synthetic preferences, and REINFORCE. Its neural network, backpropagation, and Adam optimizer are implemented in NumPy. The repository also retains the original RL-Teacher code for MuJoCo, TRPO/PPO, and human feedback collection for comparison. The original project implements Christiano et al.'s 2017 paper, [Deep Reinforcement Learning from Human Preferences](https://arxiv.org/abs/1706.03741). The mini version explains the core mechanism; it does not reproduce the paper's experimental results.
 
-## 运行 Demo
+## Demo
 
-[![默认训练过程的终端回放](docs/demo/preview.gif)](https://github.com/InfronAI/mini-rl-teacher/raw/refs/heads/main/docs/demo/mini-rl-teacher.mp4)
+[![Terminal replay of the default training run](docs/demo/preview.gif)](https://github.com/InfronAI/mini-rl-teacher/raw/refs/heads/main/docs/demo/mini-rl-teacher.mp4)
 
-[观看 / 下载 MP4 视频](https://github.com/InfronAI/mini-rl-teacher/raw/refs/heads/main/docs/demo/mini-rl-teacher.mp4) · [完整终端输出](docs/demo/terminal.txt) · [运行记录](docs/demo/run.json)
+[Watch / download the MP4](https://github.com/InfronAI/mini-rl-teacher/raw/refs/heads/main/docs/demo/mini-rl-teacher.mp4) · [Full terminal output](docs/demo/terminal.txt) · [Run metadata](docs/demo/run.json)
 
-视频来自未修改的 `mini_rl_teacher.py` 默认配置实际运行，包含预训练、全部 101 个训练画面和最终评估。将终端输出重新排版为约 43 秒的回放，每个训练画面停留 0.32 秒；播放时间不代表实际训练耗时。
+The video comes from an actual run of the unchanged `mini_rl_teacher.py` with its default settings. It includes pretraining, all 101 printed training frames, and final evaluation. Terminal output is reformatted into a roughly 43-second replay, with each training frame held for 0.32 seconds. Playback duration does not represent training time.
 
-本次使用 Python 3.11、NumPy 2.4.6，完成 1,000 轮训练后的确定性策略评估为：平均终点 `(6.00, 4.78)`、平均终点距离 `4.10`、平均真实累计奖励 `-91.79`、50 条轨迹成功率 `0%`。**这次默认运行没有收敛**，视频保留了实际结果，也展示了为什么不能把脚本固定的完成提示当作成功判定。不同运行环境与随机序列可能产生不同结果。
+Using Python 3.11 and NumPy 2.4.6, this run completed 1,000 training iterations. Deterministic evaluation over 50 episodes reported a mean endpoint of `(6.00, 4.78)`, mean endpoint distance of `4.10`, mean true return of `-91.79`, and a success rate of `0%`. **This default run did not converge.** The video preserves the actual result and illustrates why the script's fixed completion message is not a success check. Other environments and random sequences may produce different outcomes.
 
-视频制作及复现方式见 [docs/demo/README.md](docs/demo/README.md)。
+See [docs/demo/README.md](docs/demo/README.md) for recording and reproduction instructions.
 
-## 快速开始
+## Quick start
 
-在仓库根目录创建独立环境，安装 NumPy 后运行：
+From the repository root, create a virtual environment, install NumPy, and run:
 
 ```bash
 python3 -m venv .venv
@@ -29,27 +31,27 @@ python -m pip install numpy
 python mini_rl_teacher.py
 ```
 
-Windows PowerShell 使用 `.venv\Scripts\Activate.ps1` 激活环境，其余命令相同。
+In Windows PowerShell, activate the environment with `.venv\Scripts\Activate.ps1`; the other commands are the same.
 
-迷你版本只需要 Python 3 和 NumPy，无需安装仓库根目录的 `setup.py`，也不需要 MuJoCo、TensorFlow、GPU、数据库或云存储。根目录的 `pip install -e .` 面向历史实现，会引入其旧依赖。
+The mini version requires only Python 3 and NumPy. It does not require the root `setup.py`, MuJoCo, TensorFlow, a GPU, a database, or cloud storage. Running `pip install -e .` in the root installs dependencies for the historical implementation instead.
 
-运行后依次进行奖励模型预训练、策略与奖励模型联合训练、最终评估。终端会显示目标和小球的平均终点；建议使用支持 ANSI 光标控制和 Unicode 的终端。脚本目前没有命令行参数，训练配置直接写在文件中，也不会自动保存模型或训练结果。
+Execution proceeds through reward-model pretraining, joint policy/reward-model training, and final evaluation. The terminal displays the target and the ball's mean endpoint. Use a terminal that supports ANSI cursor control and Unicode. The script currently has no command-line options: training settings are defined in the file, and models or training results are not saved automatically.
 
-## 任务：从偏好中学习靠近目标
+## Task: learn to approach a target from preferences
 
-虽然类名是 `ToyLineEnv`，环境实际为二维平面：
+Despite its name, `ToyLineEnv` is a two-dimensional environment:
 
-| 项目 | 实现 |
+| Property | Implementation |
 | --- | --- |
-| 状态 | `[x, y, vx, vy]`，位置和速度，共 4 维 |
-| 动作 | `[fx, fy]`，两个方向的控制力，分别裁剪到 `[-1, 1]` |
-| 初始状态 | 位置在 `[-1, 1]²` 内随机，速度为零 |
-| 世界边界 | 两个坐标均在 `[-6, 6]` 内 |
-| 轨迹长度 | 每个 episode 固定 30 步 |
-| 目标 | 固定位置 `[3, 2]` |
-| 真实奖励 | 动作执行后，到目标的欧氏距离取负值 |
+| State | `[x, y, vx, vy]`: position and velocity, 4 dimensions |
+| Action | `[fx, fy]`: force along each axis, clipped to `[-1, 1]` |
+| Initial state | Random position in `[-1, 1]²`, zero velocity |
+| World boundaries | Both coordinates stay within `[-6, 6]` |
+| Episode length | Fixed at 30 steps |
+| Target | Fixed position `[3, 2]` |
+| True reward | Negative Euclidean distance to the target after taking the action |
 
-每一步先更新速度，再更新位置：
+Each step updates velocity, then position:
 
 ```python
 vel = clip(0.9 * vel + action, -3, 3)
@@ -57,71 +59,71 @@ pos = clip(pos + 0.1 * vel, -6, 6)
 true_reward = -norm(pos - TARGET)
 ```
 
-策略能观察小球的位置和速度，但目标坐标没有作为输入交给策略或奖励网络。目标信息通过偏好标签间接传入学习过程。
+The policy observes the ball's position and velocity. Target coordinates are not inputs to either the policy or the reward network; information about the target reaches the learning process indirectly through preference labels.
 
-示例明确写出了真实奖励，用它模拟人的判断：两段轨迹中，真实累计奖励更高的一段获胜。**真实奖励用于生成标签和评估，策略更新使用奖励模型的预测值。** 当前迷你版本没有人工点击标注流程；它对应原项目的 `synth` 模式。
+The example defines a true reward to simulate human judgment: the segment with the higher true cumulative reward wins. **True rewards generate labels and evaluate performance; policy updates use the reward model's predictions.** The mini version does not include an interactive human-labeling workflow. It corresponds to the original project's `synth` mode.
 
-## 训练流程
+## Training loop
 
 ```mermaid
 flowchart TD
-    A[均匀随机动作采集轨迹] --> B[截取 200 个片段]
-    B --> C[组成 100 对合成偏好]
-    C --> D[奖励模型预训练 600 次]
-    D --> E[初始化高斯策略]
-    E --> F[每轮采集 16 条轨迹]
-    F --> G[预测每步奖励并计算回报]
-    G --> H[REINFORCE 更新策略]
+    A[Collect trajectories with uniform random actions] --> B[Sample 200 segments]
+    B --> C[Create 100 synthetic preference pairs]
+    C --> D[Pretrain reward model for 600 updates]
+    D --> E[Initialize Gaussian policy]
+    E --> F[Collect 16 episodes per iteration]
+    F --> G[Predict step rewards and compute returns]
+    G --> H[Update policy with REINFORCE]
     H --> F
-    F --> I[从近期轨迹采样新比较]
-    I --> J[合成标签并更新奖励模型]
+    F --> I[Sample new comparisons from recent trajectories]
+    I --> J[Generate labels and update reward model]
     J --> G
 ```
 
-### 1. 生成初始偏好数据
+### 1. Generate initial preference data
 
-`segments_from_rand_rollout()` 使用均匀随机动作探索环境，不读取状态来决定动作。每条轨迹随机截取一个 15 步片段，默认收集 200 个片段，前后两半配成 100 对。
+`segments_from_rand_rollout()` explores with uniform random actions, without using the state to choose an action. It samples one 15-step segment from each trajectory, collecting 200 segments by default. Pairing the first half with the second half produces 100 comparisons.
 
-`SyntheticComparisonCollector` 比较两侧的 `original_rewards.sum()`，左侧严格更高记为 `0`，否则记为 `1`。这里没有平局标签。
+`SyntheticComparisonCollector` compares `original_rewards.sum()` on each side. The label is `0` if the left score is strictly higher, and `1` otherwise. There is no tie label.
 
-每条轨迹的主要字段为：
+Each trajectory contains:
 
-| 字段 | 含义 | 默认完整轨迹形状 |
+| Field | Meaning | Default full-episode shape |
 | --- | --- | --- |
-| `obs` | 执行动作前的位置与速度 | `(30, 4)` |
-| `actions` | 传给环境的动作 | `(30, 2)` |
-| `original_rewards` | 动作执行后的真实奖励 | `(30,)` |
-| `human_obs` | 动作执行后的位置，供可视化与评估使用 | `(30, 2)` |
+| `obs` | Position and velocity before the action | `(30, 4)` |
+| `actions` | Actions passed to the environment | `(30, 2)` |
+| `original_rewards` | True rewards after the action | `(30,)` |
+| `human_obs` | Positions after the action, used for visualization and evaluation | `(30, 2)` |
 
-### 2. 用比较训练奖励模型
+### 2. Train a reward model from comparisons
 
-`ComparisonRewardPredictor` 将缩放后的状态与动作拼接，输入 `MLP`：
+`ComparisonRewardPredictor` concatenates scaled states and actions and passes them to an `MLP`:
 
 ```text
-状态 4 维 + 动作 2 维
+4 state dimensions + 2 action dimensions
 → Dense(64) + LeakyReLU
 → Dense(64) + LeakyReLU
-→ Dense(1)：每步预测奖励
+→ Dense(1): predicted reward for each step
 ```
 
-同一个网络分别给左右片段评分，片段得分是逐步奖励之和：
+The same network scores both segments. Each segment's score is the sum of its predicted step rewards:
 
 $$
 S_L = \sum_t \hat r_\theta(s_t^L,a_t^L), \qquad
 S_R = \sum_t \hat r_\theta(s_t^R,a_t^R)
 $$
 
-选择左侧的预测概率为：
+The predicted probability of preferring the left segment is:
 
 $$
 P(L) = \frac{e^{S_L}}{e^{S_L}+e^{S_R}}
 $$
 
-用左右选择标签计算交叉熵，再通过手写反向传播和 Adam 更新网络。每次最多抽取 64 对比较，预训练默认更新 600 次。学习目标是匹配偏好，不是回归真实奖励的数值；预测奖励的绝对值不能直接与真实奖励比较。代码注释中的 `q` 表示即时奖励预测，不是 Q 函数。
+Cross-entropy against the left/right labels drives hand-written backpropagation and Adam updates. Each update samples at most 64 comparisons; pretraining uses 600 updates by default. The objective is to match preferences, not to regress the numerical true rewards. Absolute predicted rewards should not be compared directly with true rewards. The `q` mentioned in code comments denotes an immediate reward prediction, not a Q-function.
 
-### 3. 初始化并训练策略
+### 3. Initialize and train the policy
 
-预训练结束后才创建 `Policy`。它没有隐藏层，也没有加载训练好的权重：
+`Policy` is created only after reward pretraining. It has no hidden layers and loads no pretrained weights:
 
 ```python
 W = rng.randn(4, 2) * 0.01
@@ -129,7 +131,7 @@ b = np.zeros(2)
 log_std = np.full(2, -0.7)
 ```
 
-动作均值与实际采样方式为：
+The action mean and sampling rule are:
 
 ```python
 mean = tanh((obs * OBS_SCALE) @ W + b)
@@ -137,11 +139,11 @@ sigma = exp(log_std) * explore_scale
 action = clip(mean + sigma * noise, -1, 1)
 ```
 
-`noise` 是标准高斯噪声。初始均值接近零，未乘退火系数时标准差约为 `0.497`。`W`、`b` 和 `log_std` 都参与训练；尽管类注释写着“标准差固定”，实际实现会更新它。
+`noise` is standard Gaussian noise. The initial mean is close to zero, and the standard deviation before the exploration multiplier is approximately `0.497`. All of `W`, `b`, and `log_std` are trained. Although the class docstring describes a fixed standard deviation, the implementation updates it.
 
-生成初始数据的均匀随机策略，与这里的高斯策略是两个独立阶段，前者不会转化成后者的权重。
+Uniform random exploration for the initial dataset and this Gaussian policy are separate stages. The former does not supply weights to the latter.
 
-联合训练的连接点在 `main()` 中：
+The integration point in `main()` is:
 
 ```python
 path = do_rollout(env, lambda ob: policy.act(ob)[0])
@@ -150,124 +152,124 @@ predictor.path_callback(path)
 returns = reward_to_go(pred_rewards)
 ```
 
-每轮采集 16 条轨迹，用折扣系数 `0.99` 计算预测奖励的 reward-to-go，再将整个批次的回报标准化，作为 `adv` 传给 `Policy.update()`。这里没有学习状态价值函数；它是简化的 REINFORCE 更新，不是 TRPO 或 PPO。
+Each iteration collects 16 episodes. Predicted rewards are converted to reward-to-go with a discount factor of `0.99`, then returns are standardized across the batch and passed to `Policy.update()` as `adv`. There is no learned state-value function. This is a simplified REINFORCE update, not TRPO or PPO.
 
-`path_callback()` 同时维护最近 200 个候选片段，按标签调度增加比较，并定期训练奖励模型。历史比较保留在收集器中。更新是串行交替执行的；同一批轨迹的奖励可能由不同更新时刻的奖励模型给出。
+`path_callback()` maintains the latest 200 candidate segments, adds comparisons according to the label schedule, and periodically trains the reward model. Historical comparisons remain in the collector. Updates alternate sequentially; episodes within one policy batch can receive rewards from different versions of the reward model.
 
-### 4. 评估策略
+### 4. Evaluate the policy
 
-训练完成后，用 `act_mean()` 去掉探索噪声，在 50 个随机初始位置上运行，报告平均终点、平均终点距离、平均真实累计奖励，以及终点距离不超过 `0.5` 的比例。
+After training, `act_mean()` removes exploration noise for evaluation from 50 random starting positions. The script reports the mean endpoint, mean endpoint distance, mean true return, and the fraction of endpoints within distance `0.5` of the target.
 
-这衡量的是有限时长内靠近目标的能力。奖励没有直接惩罚速度，终点成功率也没有检验是否停稳；若关心稳定停留，需要额外观察末段距离和速度。
+This measures approaching the target within a fixed horizon. The reward does not directly penalize velocity, and endpoint success does not verify that the ball has stopped. To assess stable hovering near the target, also inspect distance and velocity over the final part of each trajectory.
 
-## 如何解读终端输出
+## Reading the terminal output
 
-| 输出 | 含义与边界 |
+| Display | Meaning and limitations |
 | --- | --- |
-| `▼` | 目标位置 |
-| `●` | 本批 16 条训练轨迹的平均终点，不是单条轨迹的实时位置 |
-| `★` | 平均终点与目标映射到同一个字符格，不代表精确重合 |
-| 真奖励 | 本批轨迹的平均真实累计奖励，越接近零越好 |
-| 距目标 / 命中 | 平均终点到目标的距离；不同方向的误差可能互相抵消 |
-| 预测器相关系数 | 20 条均匀随机策略轨迹上，预测总分与真实总分的相关性 |
-| 比较对 | 已创建的比较数量，不是成功轨迹数 |
+| `▼` | Target position |
+| `●` | Mean endpoint of the current 16 training episodes, not a live position in one episode |
+| `★` | Mean endpoint and target map to the same character cell, not necessarily the same coordinates |
+| True reward | Mean true cumulative reward for the batch; closer to zero is better |
+| Distance / hit | Distance from the mean endpoint to the target; errors in opposite directions can cancel |
+| Predictor correlation | Correlation between predicted and true total rewards on 20 uniform-random-policy trajectories |
+| Comparisons | Number of comparisons created, not the number of successful episodes |
 
-预训练后会单独输出一次相关系数；联合训练画面中的数值初始化为 `0`，在满足绘制条件的每 100 轮重新计算，其他时候显示上次的值。它不能充分代表奖励模型在当前策略所访问状态上的准确性。
+The script prints a correlation value after pretraining. In the joint-training display, this value starts at `0` and is recomputed every 100 iterations when the drawing condition is also met; otherwise, it retains the previous value. It does not fully measure reward-model accuracy on states visited by the current policy.
 
-末尾“真实目标已基本达成”是脚本固定打印的文字，**不是自动判定的结论**。应以最终距离和成功率为准，不预设每次运行都能收敛。
+The final statement that the true goal has been achieved is fixed text, **not an automatically verified conclusion**. Use measured final distance and success rate, rather than assuming every run converges.
 
-## 配置与收敛
+## Configuration and convergence
 
-脚本没有 `--seed` 或 `--iters` 等参数，需要编辑相应常量或 `main()` 中的配置。
+There are no `--seed` or `--iters` options. Edit the corresponding constants or settings in `main()`.
 
-| 配置 | 默认值 | 位置 |
+| Setting | Default | Location |
 | --- | --- | --- |
-| 目标位置 `TARGET` | `[3, 2]` | 文件顶部 |
-| 轨迹长度 `EPISODE_LEN` | `30` | 文件顶部 |
-| 片段长度 `SEG_LEN` | `1.5 × 10 = 15` | 文件顶部 |
-| 联合训练轮数 `N_ITERS` | `1000` | 文件顶部 |
-| 绘制间隔 `DRAW_EVERY` | `10`，另绘制第 1 轮 | 文件顶部 |
-| 初始片段 / 比较 / 奖励更新次数 | `200 / 100 / 600` | `main()` |
-| 每轮轨迹数 | `16` | `main()` |
-| 标签目标 / 调度时间尺度 | `1500 / 21000` 步 | `LabelSchedule` 的创建处 |
-| 奖励网络学习率 / 最大批量 | `0.001 / 64` | `MLP` / `train_predictor()` |
-| 策略学习率 | `0.1` | `main()` 创建 `Policy` 时 |
-| 探索系数 | 从接近 `1` 线性降到 `0.05` | 联合训练循环 |
+| Target `TARGET` | `[3, 2]` | Top-level constants |
+| Episode length `EPISODE_LEN` | `30` | Top-level constants |
+| Segment length `SEG_LEN` | `1.5 × 10 = 15` | Top-level constants |
+| Joint iterations `N_ITERS` | `1000` | Top-level constants |
+| Drawing interval `DRAW_EVERY` | `10`, plus iteration 1 | Top-level constants |
+| Initial segments / comparisons / reward updates | `200 / 100 / 600` | `main()` |
+| Episodes per iteration | `16` | `main()` |
+| Label target / schedule horizon | `1500 / 21000` steps | `LabelSchedule` construction |
+| Reward learning rate / maximum batch size | `0.001 / 64` | `MLP` / `train_predictor()` |
+| Policy learning rate | `0.1` | `Policy` construction in `main()` |
+| Exploration multiplier | Linearly decreases from near `1` to `0.05` | Joint-training loop |
 
-默认联合训练为 `1000 × 16 × 30 = 480000` 个环境步，不含预训练和评估采样。标签调度的时间尺度仍为 `70 × 10 × 30 = 21000` 步，因此标签目标较早接近上限；实际比较数还受每条轨迹最多新增一对的限制。缩短 `N_ITERS` 也会加速探索退火，不只是缩短运行时间。修改轨迹长度时，应保证它不小于片段长度，否则初始采样无法收集到片段。
+Default joint training takes `1000 × 16 × 30 = 480000` environment steps, excluding pretraining and evaluation rollouts. The label schedule still uses `70 × 10 × 30 = 21000` steps, so the desired label count approaches its limit relatively early. Actual comparison creation is also limited to at most one new pair per episode. Reducing `N_ITERS` accelerates exploration annealing as well as shortening training. Keep episode length at least as large as segment length; otherwise, initial sampling cannot collect valid segments.
 
-初始策略和初始数据都会影响收敛。前者决定早期探索方向，后者决定奖励模型最先学会区分哪些行为；二者通过后续采样形成反馈。靠近目标与接近后减速需要不同的轨迹证据，初始随机数据不保证覆盖这些行为。
+Both the initial policy and the initial dataset affect convergence. The policy determines early exploration, while the dataset determines which behaviors the reward model first learns to distinguish. Subsequent sampling feeds these effects back into training. Approaching a target and slowing down near it require different evidence; initial random trajectories need not cover both.
 
-比较初始化的影响时，可以固定初始数据与奖励模型，仅改变策略种子，再反过来固定策略、改变数据。记录多次训练的最终距离与成功率，而不是只观察平均终点图。
+To study initialization, hold the initial dataset and reward model fixed while varying the policy seed, then hold the policy fixed while varying the data. Compare final distances and success rates across runs, rather than relying only on the mean-endpoint visualization.
 
-当前全局 NumPy、环境和奖励模型种子为 `0`，策略初始化种子为 `1`。`segments_from_rand_rollout()` 的 `seed` 参数没有在函数内部使用；采样使用全局随机状态。相关系数评估也复用训练环境和全局随机源，改变评估调用次数会影响后续随机序列。
+The current global NumPy, environment, and reward-model seeds are `0`; the policy initialization seed is `1`. The `seed` argument to `segments_from_rand_rollout()` is unused inside that function, which draws from the global random state. Correlation evaluation also shares the training environment and global random source, so changing the number of evaluation calls changes subsequent random sequences.
 
-## 当前实现的限制
+## Current limitations
 
-以下描述的是现有代码行为，尚未在实现中修复：
+These describe existing behavior and have not been fixed in the implementation:
 
-- **动作裁剪与梯度不一致。** 策略先采样高斯动作，再裁剪后执行；更新却把裁剪动作代入普通高斯的对数概率梯度。发生裁剪时存在偏差。`act()` 已返回裁剪前动作，但主流程只保存裁剪后的动作。
-- **探索噪声不保证单调下降。** 外部系数会退火，但 `log_std` 同时由优化器学习，实际标准差取决于两者。
-- **比较可能重复。** 在线随机配对可能选到同一个片段，合成标签却将相等分数记为右侧获胜；这种比较无法提供有效的方向信息。
-- **奖励更新频率是近似值。** 回调累计至少 100 步后更新并清零，默认每条轨迹 30 步，实际每 120 步更新一次。
-- **泛化与训练稳定性有限。** 使用单个奖励网络、随机配对、固定输入缩放，没有独立偏好验证集、价值网络、信赖域约束或策略裁剪目标。
-- **没有持久化与自动验收。** 模型、优化器和比较数据保存在内存；尚无针对迷你版本的自动化训练测试或收敛保证。
+- **Action clipping and policy gradients are inconsistent.** Actions are sampled from a Gaussian and clipped before execution, but updates insert the clipped actions into the ordinary Gaussian log-probability gradient. This introduces bias when clipping occurs. `act()` already returns the unclipped action, but the main loop stores only the clipped one.
+- **Exploration noise need not decrease monotonically.** The external multiplier anneals, while the optimizer also learns `log_std`; both determine the actual standard deviation.
+- **Comparisons can repeat a segment.** Online pairing can select the same segment twice, while equal true scores receive a right-wins label. Such comparisons provide no useful directional signal.
+- **Reward-update frequency is approximate.** The callback updates after accumulating at least 100 steps, then resets the counter. With 30-step episodes, the actual interval is 120 steps.
+- **Generalization and training stability are limited.** The implementation uses one reward network, random pairing, and fixed input scaling. It has no separate preference-validation set, value network, trust-region constraint, or clipped policy objective.
+- **No persistence or automated acceptance checks.** Models, optimizer state, and comparisons remain in memory. There are no automated training tests for the mini version or convergence guarantees.
 
-## 对照原始项目阅读
+## Reading alongside the original project
 
 ```text
-mini_rl_teacher.py           # 主要入口：NumPy 教学实现
+mini_rl_teacher.py           # Main entry point: NumPy teaching implementation
 rl_teacher/
-  teach.py                  # 原始训练入口与奖励预测器
-  nn.py                     # Keras 奖励网络
-  envs.py                   # MuJoCo 环境包装、奖励调整、状态回放
-  segment_sampling.py       # 随机采样与片段切分
-  comparison_collectors.py  # 合成标签、人工标签、视频任务
-  label_schedules.py        # 标签预算调度
-  video.py                  # 视频编码与 GCS 上传
-  summaries.py              # TensorBoard 指标
+  teach.py                  # Original training entry point and reward predictor
+  nn.py                     # Keras reward network
+  envs.py                   # MuJoCo wrappers, reward adjustments, state replay
+  segment_sampling.py       # Random rollouts and segment sampling
+  comparison_collectors.py  # Synthetic/human labels and video tasks
+  label_schedules.py        # Label-budget scheduling
+  video.py                  # Video encoding and GCS uploads
+  summaries.py              # TensorBoard metrics
 agents/
-  parallel-trpo/            # 并行 TRPO
-  pposgd-mpi/               # PPO 与 MPI 支持
-  simple-trpo/              # 独立的实验性 TRPO 实现
-human-feedback-api/         # Django 比较记录、标注页面及数据库迁移
+  parallel-trpo/            # Parallel TRPO
+  pposgd-mpi/               # PPO with MPI support
+  simple-trpo/              # Separate experimental TRPO implementation
+human-feedback-api/         # Django comparisons, labeling pages, DB migrations
 ```
 
-| 迷你版本 | 原始模块 | 主要区别 |
+| Mini version | Original module | Main difference |
 | --- | --- | --- |
-| `ToyLineEnv` | [envs.py](rl_teacher/envs.py) | 二维小球替代 MuJoCo；位置数组替代可回放的物理状态 |
-| `do_rollout`、`sample_segment_from_path` | [segment_sampling.py](rl_teacher/segment_sampling.py) | 单进程 NumPy 采样 |
-| `SyntheticComparisonCollector` | [comparison_collectors.py](rl_teacher/comparison_collectors.py) | 仅合成左右偏好，无人工网页与视频上传 |
-| `LabelSchedule` | [label_schedules.py](rl_teacher/label_schedules.py) | 保留按步数退火的标签目标 |
-| `MLP`、`ComparisonRewardPredictor` | [nn.py](rl_teacher/nn.py)、[teach.py](rl_teacher/teach.py) | 手写前反向传播，无 TensorFlow/Keras 或 Dropout |
-| `Policy` | [parallel-trpo](agents/parallel-trpo)、[pposgd-mpi](agents/pposgd-mpi) | 简化为线性均值加 tanh 的高斯策略与 REINFORCE |
-| `ascii_grid`、`render_frame` | [video.py](rl_teacher/video.py)、[summaries.py](rl_teacher/summaries.py) | 终端平均终点展示替代视频和 TensorBoard |
+| `ToyLineEnv` | [envs.py](rl_teacher/envs.py) | A 2D ball replaces MuJoCo; position arrays replace replayable physics states |
+| `do_rollout`, `sample_segment_from_path` | [segment_sampling.py](rl_teacher/segment_sampling.py) | Single-process NumPy sampling |
+| `SyntheticComparisonCollector` | [comparison_collectors.py](rl_teacher/comparison_collectors.py) | Synthetic left/right preferences only; no labeling UI or video uploads |
+| `LabelSchedule` | [label_schedules.py](rl_teacher/label_schedules.py) | Retains the step-based label schedule |
+| `MLP`, `ComparisonRewardPredictor` | [nn.py](rl_teacher/nn.py), [teach.py](rl_teacher/teach.py) | Hand-written forward/backward passes; no TensorFlow/Keras or Dropout |
+| `Policy` | [parallel-trpo](agents/parallel-trpo), [pposgd-mpi](agents/pposgd-mpi) | A linear-plus-tanh Gaussian mean and REINFORCE replace TRPO/PPO |
+| `ascii_grid`, `render_frame` | [video.py](rl_teacher/video.py), [summaries.py](rl_teacher/summaries.py) | Terminal mean-endpoint display replaces video and TensorBoard |
 
-建议先阅读迷你文件中的 `main()`，再顺着 `do_rollout()` → `train_predictor()` → `Policy.update()` 理解数据和梯度，最后对照原项目的奖励替换接口。
+Start with `main()` in the mini file, then follow `do_rollout()` → `train_predictor()` → `Policy.update()` to understand the data and gradients. Finally, compare the original project's reward-replacement interface.
 
-### 原始实现的运行背景
+### Historical runtime
 
-原始入口是 `rl_teacher/teach.py`，有 `rl`、`synth`、`human` 三种模式。`rl` 直接使用环境奖励作为对照实验；`synth` 使用合成偏好；`human` 使用人工反馈。它们各自开始训练，`rl` 模式不会自动为其他模式提供预训练策略。
+The original entry point, `rl_teacher/teach.py`, provides three modes: `rl`, `synth`, and `human`. The `rl` baseline uses environment rewards directly; `synth` uses synthetic preferences; `human` uses human feedback. Each starts its own training run. The `rl` mode does not automatically supply a pretrained policy to the other modes.
 
-原代码围绕 Python 3.5、TensorFlow 1.2、Gym 0.9 和 mujoco-py 0.5 构建，包含旧版接口，不能直接套用上述迷你版本的安装步骤。在准备好兼容的历史运行环境后，入口示例为：
+The original code targets Python 3.5, TensorFlow 1.2, Gym 0.9, and mujoco-py 0.5 and uses legacy interfaces. The mini version's installation steps do not prepare that environment. After setting up a compatible historical environment, example entry points are:
 
 ```bash
-# 真实奖励对照
+# True-reward baseline
 python rl_teacher/teach.py -p rl -e ShortHopper-v1 -n base-rl
 
-# 合成偏好
+# Synthetic preferences
 python rl_teacher/teach.py -p synth -l 1400 -e ShortHopper-v1 -n syn-1400
 
-# 人工偏好：需先准备数据库、标注网页、视频渲染和 GCS
+# Human preferences: requires a shared database, labeling UI, rendering, and GCS
 python rl_teacher/teach.py -p human --pretrain_labels 175 -e Reacher-v1 -n human-175
 ```
 
-人工反馈通过 Django ORM 直接读写 `Comparison`，训练进程与网页必须访问同一数据库。视频异步上传到 `RL_TEACHER_GCS_BUCKET` 指定的 GCS 路径，浏览器通过媒体 URL 播放；不是训练进程通过 HTTP 调用标注 API。网页入口说明见 [human-feedback-api/README.md](human-feedback-api/README.md)。
+Human feedback is read and written directly through Django's `Comparison` model. The training process and web app must access the same database. Videos are uploaded asynchronously to the GCS location specified by `RL_TEACHER_GCS_BUCKET`, and the browser plays their media URLs. The training process does not call a labeling service over HTTP. See [human-feedback-api/README.md](human-feedback-api/README.md) for the web app entry point.
 
-原始环境包装器可能调整奖励或终止条件，日志中的 `original_rewards` 是包装后的环境奖励。原始代码及其测试属于历史研究实现，保留用于对照，并不代表已在当前环境通过训练验证。
+The original environment wrappers may modify rewards or termination conditions. Logged `original_rewards` therefore refer to the wrapped environment's rewards. The original code and tests are retained as historical research code for comparison, not as evidence of a validated training run in the current environment.
 
-## 来源与许可
+## Attribution and license
 
-本项目保留 RL-Teacher 原始实现，以迷你示例解释其偏好学习机制。感谢 Paul Christiano 和 Dario Amodei 对原系统的设计与支持，Max Harms 对并行 TRPO 集成和训练的贡献，Catherine Olsson 对原项目文档与可用性的改进，以及 Kevin Frans 的并行 TRPO 实现。
+This repository retains the original RL-Teacher implementation and adds a mini example explaining its preference-learning mechanism. Thanks to Paul Christiano and Dario Amodei for the original system's design and support, Max Harms for parallel TRPO integration and training contributions, Catherine Olsson for improvements to the original documentation and usability, and Kevin Frans for the parallel TRPO implementation.
 
-相关扩展：[rl-teacher-atari](https://github.com/machine-intelligence/rl-teacher-atari)。许可见 [LICENSE](LICENSE)。
+Related extension: [rl-teacher-atari](https://github.com/machine-intelligence/rl-teacher-atari). See [LICENSE](LICENSE) for licensing.
