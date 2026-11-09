@@ -10,9 +10,11 @@ The mini version uses a 2D ball environment, synthetic preferences, and REINFORC
 
 ## Demo
 
-[![Terminal replay of the default training run](docs/demo/preview.gif)](https://github.com/InfronAI/mini-rl-teacher/raw/refs/heads/main/docs/demo/mini-rl-teacher.mp4)
+[![Terminal replay of the default training run](docs/demo/preview.en.gif)](https://github.com/InfronAI/mini-rl-teacher/raw/refs/heads/main/docs/demo/mini-rl-teacher.en.mp4)
 
-[Watch / download the MP4](https://github.com/InfronAI/mini-rl-teacher/raw/refs/heads/main/docs/demo/mini-rl-teacher.mp4) · [Full terminal output](docs/demo/terminal.txt) · [Run metadata](docs/demo/run.json)
+[Watch / download the MP4](https://github.com/InfronAI/mini-rl-teacher/raw/refs/heads/main/docs/demo/mini-rl-teacher.en.mp4) · [English transcript](docs/demo/terminal.en.txt) · [Original output](docs/demo/terminal.txt) · [Run metadata](docs/demo/run.json)
+
+The English video translates the on-screen text of the original Chinese output; all measurements and grid positions are preserved. [中文版视频](https://github.com/InfronAI/mini-rl-teacher/raw/refs/heads/main/docs/demo/mini-rl-teacher.zh-CN.mp4) replays the same run with Chinese text.
 
 The video comes from an actual run of the unchanged `mini_rl_teacher.py` with its default settings. It includes pretraining, all 101 printed training frames, and final evaluation. Terminal output is reformatted into a roughly 43-second replay, with each training frame held for 0.32 seconds. Playback duration does not represent training time.
 

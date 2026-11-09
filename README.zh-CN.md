@@ -10,15 +10,17 @@
 
 ## 运行 Demo
 
-[![默认训练过程的终端回放](docs/demo/preview.gif)](https://github.com/InfronAI/mini-rl-teacher/raw/refs/heads/main/docs/demo/mini-rl-teacher.mp4)
+[![默认训练过程的终端回放](docs/demo/preview.zh-CN.gif)](https://github.com/InfronAI/mini-rl-teacher/raw/refs/heads/main/docs/demo/mini-rl-teacher.zh-CN.mp4)
 
-[观看 / 下载 MP4 视频](https://github.com/InfronAI/mini-rl-teacher/raw/refs/heads/main/docs/demo/mini-rl-teacher.mp4) · [完整终端输出](docs/demo/terminal.txt) · [运行记录](docs/demo/run.json)
+[观看 / 下载 MP4 视频](https://github.com/InfronAI/mini-rl-teacher/raw/refs/heads/main/docs/demo/mini-rl-teacher.zh-CN.mp4) · [完整终端输出](docs/demo/terminal.txt) · [运行记录](docs/demo/run.json)
+
+中文版视频的阶段标题、指标说明和页脚均使用中文；[English video](https://github.com/InfronAI/mini-rl-teacher/raw/refs/heads/main/docs/demo/mini-rl-teacher.en.mp4) 翻译同一次运行的画面文字，两版数值、点阵位置与播放时序完全一致。
 
 视频来自未修改的 `mini_rl_teacher.py` 默认配置实际运行，包含预训练、全部 101 个训练画面和最终评估。将终端输出重新排版为约 43 秒的回放，每个训练画面停留 0.32 秒；播放时间不代表实际训练耗时。
 
 本次使用 Python 3.11、NumPy 2.4.6，完成 1,000 轮训练后的确定性策略评估为：平均终点 `(6.00, 4.78)`、平均终点距离 `4.10`、平均真实累计奖励 `-91.79`、50 条轨迹成功率 `0%`。**这次默认运行没有收敛**，视频保留了实际结果，也展示了为什么不能把脚本固定的完成提示当作成功判定。不同运行环境与随机序列可能产生不同结果。
 
-视频制作及复现方式见 [docs/demo/README.md](docs/demo/README.md)。
+视频制作及复现方式见 [视频制作说明](docs/demo/README.zh-CN.md)。
 
 ## 快速开始
 

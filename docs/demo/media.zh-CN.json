@@ -1,0 +1,16 @@
+{
+  "language": "zh-CN",
+  "original_terminal_sha256": "b83693ec1b2b174d190b1f38dca45ae3ed7e5b9b30101707f9854ac41f293ae8",
+  "renderer_sha256": "cbdc3b18beca9750a22bbe8e7f018b35d66f058e29229bd35192c7909e923058",
+  "python": "3.11.16",
+  "pillow": "12.3.0",
+  "training_frames": 101,
+  "video_seconds": 43.32,
+  "timing": "Pretraining 4s, each printed training frame 0.32s, evaluation 7s; not real-time",
+  "presentation": "Original Chinese stdout with Chinese presentation text",
+  "assets": {
+    "mini-rl-teacher.zh-CN.mp4": "9c62f68f7960981e951d33c317799f442a1337ee6ddd60084baa10ebb697f0e5",
+    "preview.zh-CN.gif": "1362d0a4013636bed94387ea14b8bef9b51ce66ce1bb3f02e58dd3a201f0bbb2",
+    "poster.zh-CN.png": "65c6ae1885513ab42c1ff5e4eb3cf5b23e5798b0b5ed24ca99d2e41bd3c60c2d"
+  }
+}

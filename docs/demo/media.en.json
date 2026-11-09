@@ -1,0 +1,16 @@
+{
+  "language": "en",
+  "original_terminal_sha256": "b83693ec1b2b174d190b1f38dca45ae3ed7e5b9b30101707f9854ac41f293ae8",
+  "renderer_sha256": "cbdc3b18beca9750a22bbe8e7f018b35d66f058e29229bd35192c7909e923058",
+  "python": "3.11.16",
+  "pillow": "12.3.0",
+  "training_frames": 101,
+  "video_seconds": 43.32,
+  "timing": "Pretraining 4s, each printed training frame 0.32s, evaluation 7s; not real-time",
+  "presentation": "English translation of original stdout",
+  "assets": {
+    "mini-rl-teacher.en.mp4": "bdd0719ed46edde1fed7583ff1a559287b3b03791fefcb435ed1cab83161935f",
+    "preview.en.gif": "117f3aecca0d3e8814f5a7c8345299a47d459520a7a689d78fa56954e4487726",
+    "poster.en.png": "28ff77dabb1019f58deabd5ac2a4d3ae48b298e5e05367076e6da5def50b612a"
+  }
+}
